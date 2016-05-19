@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: iso-8859-15 -*-
 
 """mdmanager.py
   Management of metadata 
@@ -355,6 +356,12 @@ class MAPPER():
                    disctab.append(line)
                    
             return disctab
+
+    def str_equals(self,str1,str2):
+        """
+        performs case insensitive string comparison by first stripping trailing spaces 
+        """
+        return str1.strip().lower() == str2.strip().lower()
 
     def date2UTC(self,old_date):
         """
@@ -1096,6 +1103,236 @@ class MAPPER():
         
     
         return results
+
+    def is_valid_value(self,facet,valuelist):
+        """
+        checks if value is the consitent for the given facet
+        """
+        vall=list()
+        errlist=''
+        if not isinstance(valuelist,list) : valuelist=[valuelist]
+        for value in valuelist:
+            if facet in ['title','notes','author','Publisher']:
+                if isinstance(value, str) or isinstance(value, unicode):
+                    vall.append(value.encode("iso-8859-1")) # ashure e.g. display of 'Umlauts' as ö,...
+                else:
+                    errlist+=' | %10s | %20s |' % (facet, value[:30])
+            elif facet in ['url','DOI','PID']:
+                if isinstance(value, str) or isinstance(value, unicode):
+                    vall.append(value)
+                else:
+                    errlist+=' | %10s | %20s |' % (facet, value)
+            elif self.str_equals(facet,'Discipline'):
+                if self.map_discipl(value,self.cv_disciplines().discipl_list) is None :
+                    errlist+=' | %10s | %20s |' % (facet, value)
+                else :
+                    vall.append(value)
+            elif self.str_equals(facet,'PublicationYear'):
+                try:
+                    datetime.datetime.strptime(value, '%Y')
+                except ValueError:
+                    errlist+=' | %10s | %20s |' % (facet, value)
+                else:
+                    vall.append(value)
+            elif self.str_equals(facet,'PublicationTimestamp'):
+                try:
+                    datetime.datetime.strptime(value, '%Y-%m-%d'+'T'+'%H:%M:%S'+'Z')
+                except ValueError:
+                    errlist+=' | %10s | %20s |' % (facet, value)
+                else:
+                    vall.append(value)
+            elif self.str_equals(facet,'Language'):
+                if self.map_lang(value) is None:
+                    errlist+=' | %10s | %20s |' % (facet, value)
+                else:
+                    vall.append(value)
+            elif self.str_equals(facet,'tags'):
+                if isinstance(value,dict) and value["name"]:
+                    vall.append(value["name"])
+                else:
+                    errlist+=' | %10s | %20s |' % (facet, value)
+            else:
+                vall.append(value)
+            # to be continued for every other facet
+
+            ##if errlist != '':
+            ##    print ' Following key-value errors fails validation:\n' + errlist 
+            return vall
+
+    def validate(self,community,mdprefix,path):
+        ## validate(MAPPER object, community, mdprefix, path) - method
+        # validates the (mapped) JSON files in directory <path> against the B2FIND md schema
+        # Parameters:
+        # -----------
+        # 1. (string)   community - B2FIND community the md are harvested from
+        # 2. (string)   mdprefix -  metadata format of original harvested source (not needed her)
+        # 3. (string)   path - path to subset directory 
+        #      (without (!) 'json' subdirectory)
+        #
+        # Return Values:
+        # --------------
+        # 1. (dict)     statistic of validation 
+    
+        import collections
+
+        results = {
+            'count':0,
+            'tcount':0,
+            'ecount':0,
+            'time':0
+        }
+        
+        # check map file
+        if mdprefix == 'json' :
+            mapext='conf' ##!!!HEW --> json
+        else:
+            mapext='xml'
+        mapfile='%s/mapfiles/%s-%s.%s' % (os.getcwd(),community,mdprefix,mapext)
+        if not os.path.isfile(mapfile):
+           mapfile='%s/mapfiles/%s.%s' % (os.getcwd(),mdprefix,mapext)
+           if not os.path.isfile(mapfile):
+              self.logger.error('[ERROR] Mapfile %s does not exist !' % mapfile)
+              return results
+        mf=open(mapfile) 
+
+        # check paths
+        if not os.path.exists(path):
+            self.logger.error('[ERROR] The directory "%s" does not exist! No files to validate are found!\n(Maybe your convert list has old items?)' % (path))
+            return results
+        elif not os.path.exists(path + '/json') or not os.listdir(path + '/json'):
+            self.logger.error('[ERROR] The directory "%s/json" does not exist or no json files to validate are found!\n(Maybe your convert list has old items?)' % (path))
+            return results
+    
+        # find all .json files in path/json:
+        files = filter(lambda x: x.endswith('.json'), os.listdir(path+'/json'))
+        results['tcount'] = len(files)
+        oaiset=path.split(mdprefix)[1].strip('/')
+        
+        self.logger.debug(' %s     INFO  Validation of %d files in %s/json' % (time.strftime("%H:%M:%S"),results['tcount'],path))
+        if results['tcount'] == 0 :
+            self.logger.error(' ERROR : Found no files to validate !')
+            return results
+        self.logger.debug('    |   | %-4s | %-45s |\n   |%s|' % ('#','infile',"-" * 53))
+
+        totstats=dict()
+        for facet in self.ckan2b2find.keys():
+            totstats[facet]={
+              'xpath':'',
+              'mapped':0,
+              'valid':0,
+              'vstat':[]
+            }          
+
+            mf.seek(0, 0)
+            for line in mf:
+                if '<field name="'+facet+'">' in line:
+                    totstats[facet]['xpath']=re.sub(r"<xpath>(.*?)</xpath>", r"\1", next(mf))
+                    break
+                elif facet in line:
+                    totstats[facet]['xpath']=re.sub(r"(.*?)\$\.(.*?) VALUE", r"\2", line)
+                    break
+        fcount = 0
+        oldperc = 0
+        start = time.time()
+        for filename in files:
+            ## counter and progress bar
+            fcount+=1
+            perc=int(fcount*100/int(len(files)))
+            bartags=perc/10
+            if perc%10 == 0 and perc != oldperc :
+                oldperc=perc
+                self.logger.info("\r\t[%-20s] %d / %d%% in %d sec" % ('='*bartags, fcount, perc, time.time()-start ))
+                sys.stdout.flush()
+
+            jsondata = dict()
+            self.logger.debug('    | v | %-4d | %-s/json/%s |' % (fcount,os.path.basename(path),filename))
+
+            if ( os.path.getsize(path+'/json/'+filename) > 0 ):
+                with open(path+'/json/'+filename, 'r') as f:
+                    try:
+                        jsondata=json.loads(f.read())
+                    except:
+                        log.error('    | [ERROR] Cannot load the json file %s' % path+'/json/'+filename)
+                        results['ecount'] += 1
+                        continue
+            else:
+                results['ecount'] += 1
+                continue
+            
+            try:
+              valuearr=list()
+              for facet in self.ckan2b2find.keys():
+                    if facet.startswith('#'):
+                        continue
+                    value = None
+                    if facet in jsondata:
+                        value = jsondata[facet]
+                    if value:
+                        totstats[facet]['mapped']+=1
+                        pvalue=self.is_valid_value(facet,value)
+                        logging.debug(' key %s\n\t|- value %s\n\t|-  type %s\n\t|-  pvalue %s' % (facet,value[:30],type(value),pvalue[:30]))
+                        if pvalue and len(pvalue) > 0:
+                            totstats[facet]['valid']+=1  
+                            if type(pvalue) is list :
+                                totstats[facet]['vstat'].extend(pvalue)
+                            else:
+                                totstats[facet]['vstat'].append(pvalue)
+                        else:
+                            totstats[facet]['vstat']=[]  
+                    else:
+                        if facet == 'title':
+                           logging.debug('    | [ERROR] Facet %s is mandatory, but value is empty' % facet)
+            except IOError, e:
+                self.logger.error("[ERROR] %s in validation of facet '%s' and value '%s' \n" % (e,facet, value))
+                exit()
+
+        outfile='%s/%s' % (path,'validation.stat')
+        printstats='\n Statistics of\n\tcommunity\t%s\n\tsubset\t\t%s\n\t# of records\t%d\n  see as well %s\n\n' % (community,oaiset,fcount,outfile)  
+        printstats+=" |-> {:<16} <-- {:<20} \n  |- {:<10} | {:<9} | \n".format('Facet name','XPATH','Mapped','Validated')
+        printstats+="  |-- {:>5} | {:>4} | {:>5} | {:>4} |\n".format('#','%','#','%')
+        printstats+="      | Value statistics:\n      |- {:<5} : {:<30} |\n".format('#Occ','Value')
+        printstats+=" ----------------------------------------------------------\n"
+        for field in self.b2findfields : ## totstats:
+          if float(fcount) > 0 :
+            printstats+="\n |-> {:<16} <-- {:<20}\n  |-- {:>5} | {:>4.0f} | {:>5} | {:>4.0f}\n".format(field,totstats[field]['xpath'],totstats[field]['mapped'],totstats[field]['mapped']*100/float(fcount),totstats[field]['valid'],totstats[field]['valid']*100/float(fcount))
+            try:
+                counter=collections.Counter(totstats[field]['vstat'])
+                if totstats[field]['vstat']:
+                    for tuple in counter.most_common(10):
+                        if len(tuple[0]) > 80 : 
+                            contt='[...]' 
+                        else: 
+                            contt=''
+                        printstats+="      |- {:<5d} : {:<30}{:<5} |\n".format(tuple[1],unicode(tuple[0]).encode("utf-8")[:80],contt)
+                        ##if self.OUT.verbose > 1:
+                        ##    print printstats
+            except TypeError as e:
+                self.logger.error('    [ERROR] TypeError: %s field %s' % (e,field))
+                continue
+            except Exception as e:
+                self.logger.error('    [ERROR] %s field %s' % (e,field))
+                continue
+
+        f = open(outfile, 'w')
+        f.write(printstats)
+        f.write("\n")
+        f.close
+
+        self.logger.debug('%s     INFO  B2FIND : %d records validated; %d records caused error(s).' % (time.strftime("%H:%M:%S"),fcount,results['ecount']))
+
+        # count ... all .json files in path/json
+        results['count'] = len(filter(lambda x: x.endswith('.json'), os.listdir(path)))
+
+        self.logger.info(
+                '   \t|- %-10s |@ %-10s |\n\t| Provided | Validated | Failed |\n\t| %8d | %9d | %6d |' 
+                % ( 'Finished',time.strftime("%H:%M:%S"),
+                    results['tcount'],
+                    fcount,
+                    results['ecount']
+                ))
+
+        return results
+
 class CKAN_CLIENT(object):
 
     """
@@ -1426,7 +1663,7 @@ class UPLOADER (object):
         jsondata["name"] = ds
         jsondata["state"]='active'
         jsondata["groups"]=[{ "name" : community }]
-        jsondata["owner_org"]="demo"
+        jsondata["owner_org"]="rda"
    
         # if the dataset checked as 'new' so it is not in ckan package_list then create it with package_create:
         if (dsstatus == 'new' or dsstatus == 'unknown') :
@@ -1636,6 +1873,7 @@ def process(options,pstat):
         
             # start the process converting:
             if mode is 'multi':
+                convert_list='harvest_list'
                 logging.info(' |- Joblist:  \t%s' % options.list)
                 process_validate(MP, parse_list_file('validate', convert_list or options.list, options.community,options.mdsubset))
             else:
@@ -1747,13 +1985,15 @@ def process_validate(MP, rlist):
         logging.info('   |# %-4d : %-10s\t%-20s\t--> %-30s \n\t|- %-10s |@ %-10s |' % (ir,request[0],request[3:5],outfile,'Started',time.strftime("%H:%M:%S")))
         cstart = time.time()
         
-        results = MP.validate(request[0],request[3],os.path.abspath(request[2]+'/'+request[4]))
+        path=os.path.abspath('oaidata/'+request[0]+'-'+request[3]+'/'+request[4])
+        
+        results = MP.validate(request[0],request[3],path)
 
         ctime=time.time()-cstart
         results['time'] = ctime
         
         # save stats:
-        MP.OUT.save_stats(request[0]+'-' + request[3],request[4],'v',results)
+        ###MP.OUT.save_stats(request[0]+'-' + request[3],request[4],'v',results)
         
 def process_oaiconvert(MP, rlist):
 
