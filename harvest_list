@@ -10,8 +10,8 @@
 ###++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
 ## community         OAI URL                                verb           metadataPrefix  set
 ## -----------------------------------------------------------------------------------
-## MyProject
-myproject http://localhost:8181/oai/provider ListIdentifiers oai_dc lakeplants
+## MyProjects
+lakeplants http://localhost:8181/oai/provider ListRecords oai_dc lakeplants
 ##%%% EARLINET : MD Provider eudat-oai.dkrz.de (directly extracted from CERA)
 earlinet    http://eudat-oai.dkrz.de:8080/oai/provider ListIdentifiers  iso
 ##%%% EUDAT B2SHARE
