@@ -13,7 +13,7 @@
 ## MyProjects
 lakeplants http://localhost:8181/oai/provider ListIdentifiers oai_dc 
 ##%%% EARLINET : MD Provider eudat-oai.dkrz.de (directly extracted from CERA)
-earlinet    http://eudat-oai.dkrz.de:8080/oai/provider ListIdentifiers  iso SET
+earlinet    http://eudat-oai.dkrz.de:8080/oai/provider ListIdentifiers  iso 
 ##%%% EUDAT B2SHARE
 b2share  http://b2share.eudat.eu/oai2d ListRecords marcxml Linguistics
 b2share  http://b2share.eudat.eu/oai2d ListRecords marcxml EUON

@@ -157,10 +157,10 @@ class HARVESTER(object):
             logging.error("[ERROR: %s ] Cannot harvest through request %s\n" % (e,req))
             return -1
         except etree.XMLSyntaxError as e:
-            self.logger.error("[ERROR: %s ] Cannot harvest through request %s\n" % (e,req))
+            logging.error("[ERROR: %s ] Cannot harvest through request %s\n" % (e,req))
             return -1
         except Exception, e:
-            self.logger.error("[ERROR %s ] : %s" % (e,traceback.format_exc()))
+            logging.error("[ERROR %s ] : %s" % (e,traceback.format_exc()))
             return -1
 
         ntotrecs=sum(1 for _ in rc)
@@ -392,7 +392,7 @@ class MAPPER():
             else:
                 return '' # if converting cannot be done, make date empty
         except Exception, e:
-           self.logger.error('[ERROR] : %s - in date2UTC replace old date %s by new date %s' % (e,old_date,new_date))
+           logging.error('[ERROR] : %s - in date2UTC replace old date %s by new date %s' % (e,old_date,new_date))
            return ''
         else:
            return new_date
@@ -437,7 +437,7 @@ class MAPPER():
             if 'url' not in iddict :
                 iddict['url']=favurl
         except Exception, e:
-            self.logger.error('[ERROR] : %s - in map_identifiers %s can not converted !' % (e,invalue))
+            logging.error('[ERROR] : %s - in map_identifiers %s can not converted !' % (e,invalue))
             return None
         else:
             return iddict
@@ -541,7 +541,7 @@ class MAPPER():
             else:
                 return (desc,None,None)
         except Exception, e:
-           self.logger.debug('[ERROR] : %s - in map_temporal %s can not converted !' % (e,invalue))
+           logging.debug('[ERROR] : %s - in map_temporal %s can not converted !' % (e,invalue))
            return (None,None,None)
         else:
             return (desc,None,None)
@@ -593,7 +593,7 @@ class MAPPER():
               desc+=' boundingBox : [ %s , %s , %s, %s ]' % (coordarr[0],coordarr[1],coordarr[2],coordarr[3])
               return(desc,coordarr[0],coordarr[1],coordarr[2],coordarr[3])
         except Exception, e:
-           self.logger.error('[ERROR] : %s - in map_spatial invalue %s can not converted !' % (e,invalue))
+           logging.error('[ERROR] : %s - in map_spatial invalue %s can not converted !' % (e,invalue))
            return (None,None,None,None,None) 
     def map_discipl(self,invalue,disctab):
         """
@@ -622,21 +622,21 @@ class MAPPER():
                disc=line[2].strip()
                r=lvs.ratio(indisc,disc)
              except Exception, e:
-                 self.logger.error('[ERROR] %s in map_discipl : %s can not compared to %s !' % (e,indisc,disc))
+                 logging.error('[ERROR] %s in map_discipl : %s can not compared to %s !' % (e,indisc,disc))
                  continue
              if r > maxr  :
                  maxdisc=disc
                  maxr=r
                  ##HEW-T                   print '--- %s \n|%s|%s| %f | %f' % (line,indisc,disc,r,maxr)
            if maxr == 1 and indisc == maxdisc :
-               self.logger.debug('  | Perfect match of %s : nothing to do' % indisc)
+               logging.debug('  | Perfect match of %s : nothing to do' % indisc)
                retval.append(indisc.strip())
            elif maxr > 0.90 :
-               self.logger.debug('   | Similarity ratio %f is > 0.90 : replace value >>%s<< with best match --> %s' % (maxr,indisc,maxdisc))
+               logging.debug('   | Similarity ratio %f is > 0.90 : replace value >>%s<< with best match --> %s' % (maxr,indisc,maxdisc))
                ##return maxdisc
                retval.append(indisc.strip())
            else:
-               self.logger.debug('   | Similarity ratio %f is < 0.90 compare value >>%s<< and discipline >>%s<<' % (maxr,indisc,maxdisc))
+               logging.debug('   | Similarity ratio %f is < 0.90 compare value >>%s<< and discipline >>%s<<' % (maxr,indisc,maxdisc))
                continue
 
         if len(retval) > 0:
@@ -753,7 +753,7 @@ class MAPPER():
            else:
               sec=int(time.mktime(utctime.timetuple()))+year1epochsec
         except Exception, e:
-           self.logger.error('[ERROR] : %s - in utc2seconds date-time %s can not converted !' % (e,utc))
+           logging.error('[ERROR] : %s - in utc2seconds date-time %s can not converted !' % (e,utc))
            return None
 
         return sec
@@ -785,7 +785,7 @@ class MAPPER():
 
     def xpathmdmapper(self,xmldata,xrules,namespaces):
         # returns list or string, selected from xmldata by xpath rules (and namespaces)
-        self.logger.debug(' | %10s | %10s | %10s | \n' % ('Field','XPATH','Value'))
+        logging.debug(' | %10s | %10s | %10s | \n' % ('Field','XPATH','Value'))
 
         jsondata=dict()
 
@@ -812,7 +812,7 @@ class MAPPER():
                     continue
                 if retval and len(retval) > 0 :
                     jsondata[field]=retval ### .extend(retval)
-                    self.logger.debug(' | %-10s | %10s | %20s | \n' % (field,xpath,retval[:20]))
+                    logging.debug(' | %-10s | %10s | %20s | \n' % (field,xpath,retval[:20]))
                 elif field in ['Discipline','oai_set']:
                     jsondata[field]=['Not stated']
           except Exception as e:
@@ -858,10 +858,10 @@ class MAPPER():
 
         # check input and output paths
         if not os.path.exists(path):
-            self.logger.error('[ERROR] The directory "%s" does not exist! No files to map !' % (path))
+            logging.error('[ERROR] The directory "%s" does not exist! No files to map !' % (path))
             return results
         elif not os.path.exists(path + insubdir) or not os.listdir(path + insubdir):
-            self.logger.error('[ERROR] The input directory "%s%s" does not exist or no %s-files to convert are found !\n(Maybe your convert list has old items?)' % (path,insubdir,insubdir))
+            logging.error('[ERROR] The input directory "%s%s" does not exist or no %s-files to convert are found !\n(Maybe your convert list has old items?)' % (path,insubdir,insubdir))
             return results
       
         # make output directory for mapped json's
@@ -881,12 +881,12 @@ class MAPPER():
             mapfile='%s/mapfiles/%s-%s.%s' % (os.getcwd(),community,mdprefix,mapext)
 
         if not os.path.isfile(mapfile):
-            self.logger.error('[WARNING] Mapfile %s does not exist !' % mapfile)
+            logging.error('[WARNING] Mapfile %s does not exist !' % mapfile)
             mapfile='%s/mapfiles/%s.%s' % (os.getcwd(),mdprefix,mapext)
             if not os.path.isfile(mapfile):
-                self.logger.error('[ERROR] Mapfile %s does not exist !' % mapfile)
+                logging.error('[ERROR] Mapfile %s does not exist !' % mapfile)
                 return results
-        self.logger.debug('  |- Mapfile\t%s' % os.path.basename(mapfile))
+        logging.debug('  |- Mapfile\t%s' % os.path.basename(mapfile))
         mf = codecs.open(mapfile, "r", "utf-8")
         maprules = mf.readlines()
         maprules = filter(lambda x:len(x) != 0,maprules) # removes empty lines
@@ -898,7 +898,7 @@ class MAPPER():
             if ns:
                 namespaces[ns.group(3)]=ns.group(5)
                 continue
-        self.logger.debug('  |- Namespaces\t%s' % json.dumps(namespaces,sort_keys=True, indent=4))
+        logging.debug('  |- Namespaces\t%s' % json.dumps(namespaces,sort_keys=True, indent=4))
 
         # check specific postproc mapping config file
         subset=os.path.basename(path).split('_')[0]
@@ -927,7 +927,7 @@ class MAPPER():
         fcount = 0
         oldperc=0
         err = None
-        self.logger.debug(' %s     INFO  Processing of %s files in %s/%s' % (time.strftime("%H:%M:%S"),infformat,path,insubdir))
+        logging.debug(' %s     INFO  Processing of %s files in %s/%s' % (time.strftime("%H:%M:%S"),infformat,path,insubdir))
         
         ## start processing loop
         start = time.time()
@@ -962,7 +962,7 @@ class MAPPER():
                 ## XPATH rsp. JPATH converter
                 if  mdprefix == 'json':
                     try:
-                        self.logger.debug(' |- %s    INFO %s to JSON FileProcessor - Processing: %s%s/%s' % (time.strftime("%H:%M:%S"),infformat,os.path.basename(path),insubdir,filename))
+                        logging.debug(' |- %s    INFO %s to JSON FileProcessor - Processing: %s%s/%s' % (time.strftime("%H:%M:%S"),infformat,os.path.basename(path),insubdir,filename))
                         jsondata=self.jsonmdmapper(jsondata,maprules)
                     except Exception as e:
                         logging.error('    | [ERROR] %s : during %s 2 json processing' % (infformat,e) )
@@ -971,7 +971,7 @@ class MAPPER():
                 else:
                     try:
                         # Run Python XPATH converter
-                        self.logger.debug('    | xpath | %-4d | %-45s |' % (fcount,os.path.basename(filename)))
+                        logging.debug('    | xpath | %-4d | %-45s |' % (fcount,os.path.basename(filename)))
                         jsondata=self.xpathmdmapper(xmldata,maprules,namespaces)
                     except Exception as e:
                         logging.error('    | [ERROR] %s : during XPATH processing' % e )
@@ -980,10 +980,10 @@ class MAPPER():
                 try:
                    ## md postprocessor
                    if (specrules):
-                       self.logger.debug(' [INFO]:  Processing according specrules %s' % specrules)
+                       logging.debug(' [INFO]:  Processing according specrules %s' % specrules)
                        jsondata=self.postprocess(jsondata,specrules)
                 except Exception as e:
-                    self.logger.error(' [ERROR] %s : during postprocessing' % (e))
+                    logging.error(' [ERROR] %s : during postprocessing' % (e))
                     continue
 
                 iddict=dict()
@@ -1040,7 +1040,7 @@ class MAPPER():
                             else:
                                 jsondata[facet] = None
                    except Exception as e:
-                       self.logger.error(' [WARNING] %s : during mapping of\n\tfield\t%s\n\tvalue%s' % (e,facet,jsondata[facet]))
+                       logging.error(' [WARNING] %s : during mapping of\n\tfield\t%s\n\tvalue%s' % (e,facet,jsondata[facet]))
                        continue
 
                 if iddict :
@@ -1085,9 +1085,9 @@ class MAPPER():
 
 
         out=' %s to json stdout\nsome stuff\nlast line ..' % infformat
-        if (err is not None ): self.logger.error('[ERROR] ' + err)
+        if (err is not None ): logging.error('[ERROR] ' + err)
 
-        self.logger.info(
+        logging.info(
                 '   \t|- %-10s |@ %-10s |\n\t| Provided | Mapped | Failed |\n\t| %8d | %6d | %6d |' 
                 % ( 'Finished',time.strftime("%H:%M:%S"),
                     results['tcount'],
@@ -1192,16 +1192,16 @@ class MAPPER():
         if not os.path.isfile(mapfile):
            mapfile='%s/mapfiles/%s.%s' % (os.getcwd(),mdprefix,mapext)
            if not os.path.isfile(mapfile):
-              self.logger.error('[ERROR] Mapfile %s does not exist !' % mapfile)
+              logging.error('[ERROR] Mapfile %s does not exist !' % mapfile)
               return results
         mf=open(mapfile) 
 
         # check paths
         if not os.path.exists(path):
-            self.logger.error('[ERROR] The directory "%s" does not exist! No files to validate are found!\n(Maybe your convert list has old items?)' % (path))
+            logging.error('[ERROR] The directory "%s" does not exist! No files to validate are found!\n(Maybe your convert list has old items?)' % (path))
             return results
         elif not os.path.exists(path + '/json') or not os.listdir(path + '/json'):
-            self.logger.error('[ERROR] The directory "%s/json" does not exist or no json files to validate are found!\n(Maybe your convert list has old items?)' % (path))
+            logging.error('[ERROR] The directory "%s/json" does not exist or no json files to validate are found!\n(Maybe your convert list has old items?)' % (path))
             return results
     
         # find all .json files in path/json:
@@ -1209,11 +1209,11 @@ class MAPPER():
         results['tcount'] = len(files)
         oaiset=path.split(mdprefix)[1].strip('/')
         
-        self.logger.debug(' %s     INFO  Validation of %d files in %s/json' % (time.strftime("%H:%M:%S"),results['tcount'],path))
+        logging.debug(' %s     INFO  Validation of %d files in %s/json' % (time.strftime("%H:%M:%S"),results['tcount'],path))
         if results['tcount'] == 0 :
-            self.logger.error(' ERROR : Found no files to validate !')
+            logging.error(' ERROR : Found no files to validate !')
             return results
-        self.logger.debug('    |   | %-4s | %-45s |\n   |%s|' % ('#','infile',"-" * 53))
+        logging.debug('    |   | %-4s | %-45s |\n   |%s|' % ('#','infile',"-" * 53))
 
         totstats=dict()
         for facet in self.ckan2b2find.keys():
@@ -1242,11 +1242,11 @@ class MAPPER():
             bartags=perc/10
             if perc%10 == 0 and perc != oldperc :
                 oldperc=perc
-                self.logger.info("\r\t[%-20s] %d / %d%% in %d sec" % ('='*bartags, fcount, perc, time.time()-start ))
+                logging.info("\r\t[%-20s] %d / %d%% in %d sec" % ('='*bartags, fcount, perc, time.time()-start ))
                 sys.stdout.flush()
 
             jsondata = dict()
-            self.logger.debug('    | v | %-4d | %-s/json/%s |' % (fcount,os.path.basename(path),filename))
+            logging.debug('    | v | %-4d | %-s/json/%s |' % (fcount,os.path.basename(path),filename))
 
             if ( os.path.getsize(path+'/json/'+filename) > 0 ):
                 with open(path+'/json/'+filename, 'r') as f:
@@ -1284,7 +1284,7 @@ class MAPPER():
                         if facet == 'title':
                            logging.debug('    | [ERROR] Facet %s is mandatory, but value is empty' % facet)
             except IOError, e:
-                self.logger.error("[ERROR] %s in validation of facet '%s' and value '%s' \n" % (e,facet, value))
+                logging.error("[ERROR] %s in validation of facet '%s' and value '%s' \n" % (e,facet, value))
                 exit()
 
         outfile='%s/%s' % (path,'validation.stat')
@@ -1309,10 +1309,10 @@ class MAPPER():
                         ##if self.OUT.verbose > 1:
                         ##    print printstats
             except TypeError as e:
-                self.logger.error('    [ERROR] TypeError: %s field %s' % (e,field))
+                logging.error('    [ERROR] TypeError: %s field %s' % (e,field))
                 continue
             except Exception as e:
-                self.logger.error('    [ERROR] %s field %s' % (e,field))
+                logging.error('    [ERROR] %s field %s' % (e,field))
                 continue
 
         f = open(outfile, 'w')
@@ -1320,12 +1320,12 @@ class MAPPER():
         f.write("\n")
         f.close
 
-        self.logger.debug('%s     INFO  B2FIND : %d records validated; %d records caused error(s).' % (time.strftime("%H:%M:%S"),fcount,results['ecount']))
+        logging.debug('%s     INFO  B2FIND : %d records validated; %d records caused error(s).' % (time.strftime("%H:%M:%S"),fcount,results['ecount']))
 
         # count ... all .json files in path/json
         results['count'] = len(filter(lambda x: x.endswith('.json'), os.listdir(path)))
 
-        self.logger.info(
+        logging.info(
                 '   \t|- %-10s |@ %-10s |\n\t| Provided | Validated | Failed |\n\t| %8d | %9d | %6d |' 
                 % ( 'Finished',time.strftime("%H:%M:%S"),
                     results['tcount'],
@@ -1410,7 +1410,7 @@ class CKAN_CLIENT(object):
 
             print 'Total number of datasets: ' + str(len(data['result']))
             for dataset in data['result']:
-	            self.logger.info('\tTry to activate object: ' + str(dataset))
+	            logging.info('\tTry to activate object: ' + str(dataset))
 	            self.action('package_update',{"name" : dataset[0], "state":"active"})
 
             return True
@@ -1454,29 +1454,29 @@ class CKAN_CLIENT(object):
         # make json data in conformity with URL standards
         data_string = unicode(urllib.quote(json.dumps(data_dict)), errors='replace')
 
-        self.logger.debug('\t|-- Action %s\n\t|-- Calling %s ' % (action,action_url))	
-        ##HEW-Tself.logger.debug('\t|-- Object %s ' % data_dict)	
+        logging.debug('\t|-- Action %s\n\t|-- Calling %s ' % (action,action_url))	
+        ##HEW-Tlogging.debug('\t|-- Object %s ' % data_dict)	
         try:
             request = urllib2.Request(action_url)
             if (self.api_key): request.add_header('Authorization', self.api_key)
             response = urllib2.urlopen(request,data_string)
         except urllib2.HTTPError as e:
-            self.logger.debug('\tHTTPError %s : The server %s couldn\'t fulfill the action %s.' % (e.code,self.ip_host,action))
+            logging.debug('\tHTTPError %s : The server %s couldn\'t fulfill the action %s.' % (e.code,self.ip_host,action))
             if ( e.code == 403 ):
-                self.logger.error('\tAccess forbidden, maybe the API key is not valid?')
+                logging.error('\tAccess forbidden, maybe the API key is not valid?')
                 exit(e.code)
             elif ( e.code == 409 and action == 'package_create'):
-                self.logger.debug('\tMaybe the dataset already exists => try to update the package')
+                logging.debug('\tMaybe the dataset already exists => try to update the package')
                 self.action('package_update',data_dict)
                 ##HEW-D return {"success" : False}
             elif ( e.code == 409):
-                self.logger.debug('\tMaybe you have a parameter error?')
+                logging.debug('\tMaybe you have a parameter error?')
                 return {"success" : False}
             elif ( e.code == 500):
-                self.logger.error('\tInternal server error')
+                logging.error('\tInternal server error')
                 exit(e.code)
         except urllib2.URLError as e:
-            self.logger.error('\tURLError %s : %s' % (e,e.reason))
+            logging.error('\tURLError %s : %s' % (e,e.reason))
             exit('%s' % e.reason)
         else :
             out = json.loads(response.read())
@@ -1544,22 +1544,22 @@ class UPLOADER (object):
     def json2ckan(self, jsondata):
         ## json2ckan(UPLOADER object, json data) - method
         ##  converts flat JSON structure to CKAN JSON record with extra fields
-        self.logger.debug('    | Adapt default fields for upload to CKAN')
+        logging.debug('    | Adapt default fields for upload to CKAN')
         for key in self.ckandeffields :
             if key not in jsondata:
                 logging.debug('[WARNING] : CKAN default key %s does not exist' % key)
             else:
-                self.logger.debug('    | -- %-25s ' % key)
+                logging.debug('    | -- %-25s ' % key)
                 if key in  ["author"] :
                     jsondata[key]=';'.join(list(jsondata[key]))
                 elif key in ["title","notes"] :
                     jsondata[key]='\n'.join(list(jsondata[key]))##.encode("iso-8859-1") ### !!! encode to display e.g. 'Umlauts' corectly
 
         jsondata['extras']=list()
-        self.logger.debug('    | Adapt extra fields for upload to CKAN')
+        logging.debug('    | Adapt extra fields for upload to CKAN')
         for key in set(self.b2findfields) - set(self.ckandeffields) :
             if key in jsondata :
-                self.logger.debug('    | -- %-25s ' % key)
+                logging.debug('    | -- %-25s ' % key)
                 if key in ['Contact','Format','Language','Publisher','PublicationYear','Checksum']:
                     value=';'.join(jsondata[key])
                 elif key in ['oai_set','oai_identifier']: ### ,'fulltext']
@@ -1669,13 +1669,13 @@ class UPLOADER (object):
    
         # if the dataset checked as 'new' so it is not in ckan package_list then create it with package_create:
         if (dsstatus == 'new' or dsstatus == 'unknown') :
-            self.logger.debug('\t - Try to create dataset %s' % ds)
+            logging.debug('\t - Try to create dataset %s' % ds)
             
             results = self.CKAN.action('package_create',jsondata)
             if (results and results['success']):
                 rvalue = 1
             else:
-                self.logger.debug('\t - Creation failed. Try to update instead.')
+                logging.debug('\t - Creation failed. Try to update instead.')
                 results = self.CKAN.action('package_update',jsondata)
                 if (results and results['success']):
                     rvalue = 2
@@ -1684,13 +1684,13 @@ class UPLOADER (object):
         
         # if the dsstatus is 'changed' then update it with package_update:
         elif (dsstatus == 'changed'):
-            self.logger.debug('\t - Try to update dataset %s' % ds)
+            logging.debug('\t - Try to update dataset %s' % ds)
             
             results = self.CKAN.action('package_update',jsondata)
             if (results and results['success']):
                 rvalue = 2
             else:
-                self.logger.debug('\t - Update failed. Try to create instead.')
+                logging.debug('\t - Update failed. Try to create instead.')
                 results = self.CKAN.action('package_create',jsondata)
                 if (results and results['success']):
                     rvalue = 1
@@ -1962,7 +1962,11 @@ def process_map(MP, rlist):
         
         cstart = time.time()
         
-        path=os.path.abspath('oaidata/'+request[0]+'-'+request[3]+'/'+request[4])
+        if len(request) > 4:
+            path=os.path.abspath('oaidata/'+request[0]+'-'+request[3]+'/'+request[4])
+        else:
+            path=os.path.abspath('oaidata/'+request[0]+'-'+request[3]+'/SET')
+            
         results = MP.map(ir,request[0],request[3],path,target)
 
         ctime=time.time()-cstart
@@ -1983,12 +1987,19 @@ def process_validate(MP, rlist):
     ir=0
     for request in rlist:
         ir+=1
-        outfile='%s/%s/%s' % (request[2],request[4],'validation.stat')
+        if len(request) > 4:
+            outfile='%s/%s/%s' % (request[2],request[4],'validation.stat')
+        else:
+            outfile='%s/%s/%s' % (request[2],'SET','validation.stat')
+
         logging.info('   |# %-4d : %-10s\t%-20s\t--> %-30s \n\t|- %-10s |@ %-10s |' % (ir,request[0],request[3:5],outfile,'Started',time.strftime("%H:%M:%S")))
         cstart = time.time()
         
-        path=os.path.abspath('oaidata/'+request[0]+'-'+request[3]+'/'+request[4])
-        
+        if len(request) > 4:
+            path=os.path.abspath('oaidata/'+request[0]+'-'+request[3]+'/'+request[4])
+        else:
+            path=os.path.abspath('oaidata/'+request[0]+'-'+request[3]+'/SET')
+
         results = MP.validate(request[0],request[3],path)
 
         ctime=time.time()-cstart
@@ -2057,7 +2068,10 @@ def process_upload(UP, rlist, options):
         logging.info('   |# %-4d : %-10s\t%-20s \n\t|- %-10s |@ %-10s |' % (ir,request[0],request[2:5],'Started',time.strftime("%H:%M:%S")))
         community, source, dir = request[0:3]
         mdprefix = request[3]
-        subset = request[4]
+        if len(request) > 4:
+            subset = request[4]
+        else:
+            subset = 'SET'
         dir = dir+'/'+subset
         
         results = {
