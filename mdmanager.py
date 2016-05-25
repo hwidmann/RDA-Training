@@ -865,7 +865,7 @@ class MAPPER():
             return results
       
         # make output directory for mapped json's
-        if (target_mdschema):
+        if (target_mdschema and not target_mdschema.startswith('#')):
             outpath=path+'-'+target_mdschema+'/json'
         else:
             outpath=path+'/json'
@@ -875,12 +875,13 @@ class MAPPER():
            os.makedirs(outpath)
 
         # check and read rules from mapfile
-        if (target_mdschema):
+        if (target_mdschema and not target_mdschema.startswith('#')):
             mapfile='%s/mapfiles/%s-%s.%s' % (os.getcwd(),community,target_mdschema,mapext)
         else:
             mapfile='%s/mapfiles/%s-%s.%s' % (os.getcwd(),community,mdprefix,mapext)
 
         if not os.path.isfile(mapfile):
+            self.logger.error('[WARNING] Mapfile %s does not exist !' % mapfile)
             mapfile='%s/mapfiles/%s.%s' % (os.getcwd(),mdprefix,mapext)
             if not os.path.isfile(mapfile):
                 self.logger.error('[ERROR] Mapfile %s does not exist !' % mapfile)
@@ -1287,6 +1288,7 @@ class MAPPER():
                 exit()
 
         outfile='%s/%s' % (path,'validation.stat')
+        print '\n Statistics of\n\tcommunity\t%s\n\tsubset\t\t%s\n\t# of records\t%d\n  see in %s\n\n' % (community,oaiset,fcount,outfile)  
         printstats='\n Statistics of\n\tcommunity\t%s\n\tsubset\t\t%s\n\t# of records\t%d\n  see as well %s\n\n' % (community,oaiset,fcount,outfile)  
         printstats+=" |-> {:<16} <-- {:<20} \n  |- {:<10} | {:<9} | \n".format('Facet name','XPATH','Mapped','Validated')
         printstats+="  |-- {:>5} | {:>4} | {:>5} | {:>4} |\n".format('#','%','#','%')
@@ -1450,7 +1452,7 @@ class CKAN_CLIENT(object):
             action_url = "http://{host}/api/3/action/{action}".format(host=self.ip_host,action=action)
 
         # make json data in conformity with URL standards
-        data_string = urllib.quote(json.dumps(data_dict))
+        data_string = unicode(urllib.quote(json.dumps(data_dict)), errors='replace')
 
         self.logger.debug('\t|-- Action %s\n\t|-- Calling %s ' % (action,action_url))	
         ##HEW-Tself.logger.debug('\t|-- Object %s ' % data_dict)	
@@ -1551,7 +1553,7 @@ class UPLOADER (object):
                 if key in  ["author"] :
                     jsondata[key]=';'.join(list(jsondata[key]))
                 elif key in ["title","notes"] :
-                    jsondata[key]='\n'.join(list(jsondata[key])).encode("iso-8859-1") ### !!! encode to display e.g. 'Umlauts' corectly
+                    jsondata[key]='\n'.join(list(jsondata[key]))##.encode("iso-8859-1") ### !!! encode to display e.g. 'Umlauts' corectly
 
         jsondata['extras']=list()
         self.logger.debug('    | Adapt extra fields for upload to CKAN')
@@ -2156,14 +2158,19 @@ def process_upload(UP, rlist, options):
             jsondata['MetaDataAccess']=mdaccess
 
             jsondata=UP.json2ckan(jsondata)
-            # determine checksum of json record and append
-            try:
-                checksum=hashlib.md5(unicode(json.dumps(jsondata))).hexdigest()
-            except UnicodeEncodeError:
-                logging.error('        |-> [ERROR] Unicode encoding failed during md checksum determination')
-                checksum=None
-            else:
-                jsondata['version'] = checksum
+##            # determine checksum of json record and append
+##            try:
+##                checksum=hashlib.md5(unicode(json.dumps(jsondata))).hexdigest()
+##                checksum=hashlib.md5(json.dumps(jsondata)).hexdigest()
+##            except UnicodeEncodeError:
+##                logging.error('        |-> [ERROR] Unicode encoding failed during md checksum determination')
+##                checksum=None
+##            except Exception, err:
+##                logging.error('        |-> [ERROR] %s' % err)
+##                checksum=None
+##            else:
+##                jsondata['version'] = checksum
+            jsondata['version'] = None
                 
             # Set the tag ManagerVersion:
             jsondata['extras'].append({
@@ -2336,8 +2343,8 @@ def parse_list_file(process,filename,community=None,subset=None,mdprefix=None,ta
             elif ( not request.split()[4] == subset ) and (not ( subset.endswith('*') and request.split()[4].startswith(subset.translate(None, '*')))) :
               continue
 
-        if (target_mdschema != None):
-            request+=' '+target_mdschema  
+##        if (target_mdschema != None):
+##            request+=' '+target_mdschema  
 
         reqlist.append(request.split())
         

@@ -11,9 +11,9 @@
 ## community         OAI URL                                verb           metadataPrefix  set
 ## -----------------------------------------------------------------------------------
 ## MyProjects
-lakeplants http://localhost:8181/oai/provider ListRecords oai_dc lakeplants
+lakeplants http://localhost:8181/oai/provider ListIdentifiers oai_dc 
 ##%%% EARLINET : MD Provider eudat-oai.dkrz.de (directly extracted from CERA)
-earlinet    http://eudat-oai.dkrz.de:8080/oai/provider ListIdentifiers  iso
+earlinet    http://eudat-oai.dkrz.de:8080/oai/provider ListIdentifiers  iso SET
 ##%%% EUDAT B2SHARE
 b2share  http://b2share.eudat.eu/oai2d ListRecords marcxml Linguistics
 b2share  http://b2share.eudat.eu/oai2d ListRecords marcxml EUON
@@ -29,7 +29,3 @@ datacite  http://oai.datacite.org/oai  ListIdentifiers  oai_dc ANDS.CENTRE-2 ## 
 datacite  http://oai.datacite.org/oai  ListIdentifiers  oai_dc ANDS.CENTRE-3 ## Monash University; 39;
 datacite  http://oai.datacite.org/oai  ListIdentifiers  oai_dc ANDS.CENTRE-5 ## TERN Central Portal; 178;
 datacite  http://oai.datacite.org/oai  ListIdentifiers  oai_dc ANDS.CENTRE-6 ## Curtin University; 140;
-datacite  http://oai.datacite.org/oai  ListIdentifiers  oai_dc TIB.HZB ## Helmholtz-Zentrum Berlin für Materialien und Energie GmbH; 48;
-datacite  http://oai.datacite.org/oai  ListIdentifiers  oai_dc ZBMED.HITS ## HITS gGmbH,Heidelberger Institut für Theoretische Studien; 0;
-datacite  http://oai.datacite.org/oai  ListIdentifiers  oai_dc ZBMED.IJSFD ## International Center for Food Chain and Network Research, Rheinische Friedrich Wilhelms-Universität Bonn; 16;
-datacite  http://oai.datacite.org/oai  ListIdentifiers  oai_dc ZBW.PBR ## e-Journal of Practical Business Research; 45;
